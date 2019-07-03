@@ -285,7 +285,7 @@ async function delete_bucket_encryption(req) {
  * READ_BUCKET
  *
  */
-function read_bucket(req) {
+async function read_bucket(req) {
     var bucket = find_bucket(req);
     var pools = [];
 
@@ -295,19 +295,17 @@ function read_bucket(req) {
         });
     });
     pools = _.compact(pools);
+    await node_allocator.refresh_tiering_alloc(bucket.tiering);
 
     let pool_names = pools.map(pool => pool.name);
-    return P.props({
-            bucket,
-            nodes_aggregate_pool: nodes_client.instance().aggregate_nodes_by_pool(pool_names, req.system._id),
-            hosts_aggregate_pool: nodes_client.instance().aggregate_hosts_by_pool(null, req.system._id),
-            aggregate_data_free_by_tier: nodes_client.instance().aggregate_data_free_by_tier(
-                bucket.tiering.tiers.map(tiers_object => String(tiers_object.tier._id)), req.system._id),
-            num_of_objects: MDStore.instance().count_objects_of_bucket(bucket._id),
-            func_configs: get_bucket_func_configs(req, bucket),
-            unused_refresh_tiering_alloc: node_allocator.refresh_tiering_alloc(bucket.tiering),
-        })
-        .then(get_bucket_info);
+    return get_bucket_info({
+        bucket,
+        nodes_aggregate_pool: await nodes_client.instance().aggregate_nodes_by_pool(pool_names, req.system._id),
+        hosts_aggregate_pool: await nodes_client.instance().aggregate_hosts_by_pool(null, req.system._id),
+        num_of_objects: await MDStore.instance().count_objects_of_bucket(bucket._id),
+        func_configs: await get_bucket_func_configs(req, bucket),
+        bucket_stats: undefined,
+    });
 }
 
 async function read_bucket_sdk_info(req) {
@@ -1074,14 +1072,13 @@ function get_bucket_info({
     bucket,
     nodes_aggregate_pool,
     hosts_aggregate_pool,
-    aggregate_data_free_by_tier,
     num_of_objects,
     func_configs,
-    bucket_stats
+    bucket_stats,
 }) {
     const tiering_pools_status = node_allocator.get_tiering_status(bucket.tiering);
     const tiering = tier_server.get_tiering_policy_info(bucket.tiering, tiering_pools_status,
-        nodes_aggregate_pool, hosts_aggregate_pool, aggregate_data_free_by_tier);
+        nodes_aggregate_pool, hosts_aggregate_pool);
     const info = {
         name: bucket.name,
         namespace: bucket.namespace ? {
