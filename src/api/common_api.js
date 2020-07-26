@@ -759,10 +759,13 @@ module.exports = {
 
         bucket_cache_config: {
             type: 'object',
-            required: [ ],
+            required: [],
             properties: {
                 ttl_ms: {
                     $ref: '#/definitions/bucket_cache_ttl'
+                },
+                edge_bucket: {
+                    type: 'boolean'
                 }
             }
         },
