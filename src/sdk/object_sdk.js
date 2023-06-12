@@ -150,6 +150,7 @@ class ObjectSDK {
 
     async read_bucket_sdk_policy_info(name) {
         const miss = process.env.BYPASS_CACHE_MISS ? undefined : 'cache_miss';
+        dbg.log0('JAJA skip cache miss', miss);
         const { bucket } = await bucket_namespace_cache.get_with_cache({ sdk: this, name }, miss);
         const policy_info = {
             s3_policy: bucket.s3_policy,
@@ -500,6 +501,7 @@ class ObjectSDK {
             throw e;
         } finally {
             if (!process.env.BYPASS_COUNTERS) {
+                dbg.log0('JAJA skip update counters', process.env.BYPASS_COUNTERS);
                 stats_collector.instance(this.internal_rpc_client).update_ops_counters({
                     time: Date.now() - start_time,
                     op_name: `read_object`,
