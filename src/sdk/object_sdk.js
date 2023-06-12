@@ -500,10 +500,11 @@ class ObjectSDK {
         } finally {
             if (!process.env.BYPASS_COUNTERS) {
                 stats_collector.instance(this.internal_rpc_client).update_ops_counters({
-                time: Date.now() - start_time,
-                op_name: `read_object`,
-                error,
-            });
+                    time: Date.now() - start_time,
+                    op_name: `read_object`,
+                    error,
+                });
+            }
         }
         // update bucket counters
         stats_collector.instance(this.internal_rpc_client).update_bucket_read_counters({
