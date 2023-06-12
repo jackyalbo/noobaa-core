@@ -126,55 +126,55 @@ async function run_upgrade() {
     }
 
     let exit_code = 0;
-    const container_version = pkg.version;
-    let server_version = _.get(system_store, 'data.systems.0.current_version');
-    let current_version = server_version;
-    if (should_upgrade(server_version, container_version)) {
-        const this_upgrade = {
-            timestamp: Date.now(),
-            completed_scripts: [],
-            from_version: server_version,
-            to_version: container_version
-        };
-        let upgrade_history = system_store.data.systems[0].upgrade_history;
-        try {
-            const upgrade_scripts = await load_required_scripts(server_version, container_version);
-            for (const script of upgrade_scripts) {
-                dbg.log0(`running upgrade script ${script.file}: ${script.description}`);
-                try {
-                    await script.run({ dbg, db_client, system_store, system_server });
-                    this_upgrade.completed_scripts.push(script.file);
-                } catch (err) {
-                    dbg.error(`failed running upgrade script ${script.file}`, err);
-                    this_upgrade.error = err.stack;
-                    throw err;
-                }
-            }
-            upgrade_history.successful_upgrades = [this_upgrade, ...upgrade_history.successful_upgrades];
-            current_version = container_version;
-        } catch (err) {
-            dbg.error('upgrade manager failed!!!', err);
-            exit_code = 1;
-            if (upgrade_history) {
-                upgrade_history.last_failure = this_upgrade;
-                upgrade_history.last_failure.error = err.stack;
-            }
-        }
-        // update upgrade_history
-        try {
-            await system_store.make_changes_with_retries({
-                update: {
-                    systems: [{
-                        _id: system_store.data.systems[0]._id,
-                        $set: { upgrade_history, current_version }
-                    }]
-                }
-            }, { max_retries: 10, delay: 30000 });
-        } catch (error) {
-            dbg.error('failed to update system_store with upgrade information');
-            exit_code = 1;
-        }
-    }
+    // const container_version = pkg.version;
+    // let server_version = _.get(system_store, 'data.systems.0.current_version');
+    // let current_version = server_version;
+    // if (should_upgrade(server_version, container_version)) {
+    //     const this_upgrade = {
+    //         timestamp: Date.now(),
+    //         completed_scripts: [],
+    //         from_version: server_version,
+    //         to_version: container_version
+    //     };
+    //     let upgrade_history = system_store.data.systems[0].upgrade_history;
+    //     try {
+    //         const upgrade_scripts = await load_required_scripts(server_version, container_version);
+    //         for (const script of upgrade_scripts) {
+    //             dbg.log0(`running upgrade script ${script.file}: ${script.description}`);
+    //             try {
+    //                 await script.run({ dbg, db_client, system_store, system_server });
+    //                 this_upgrade.completed_scripts.push(script.file);
+    //             } catch (err) {
+    //                 dbg.error(`failed running upgrade script ${script.file}`, err);
+    //                 this_upgrade.error = err.stack;
+    //                 throw err;
+    //             }
+    //         }
+    //         upgrade_history.successful_upgrades = [this_upgrade, ...upgrade_history.successful_upgrades];
+    //         current_version = container_version;
+    //     } catch (err) {
+    //         dbg.error('upgrade manager failed!!!', err);
+    //         exit_code = 1;
+    //         if (upgrade_history) {
+    //             upgrade_history.last_failure = this_upgrade;
+    //             upgrade_history.last_failure.error = err.stack;
+    //         }
+    //     }
+    //     // update upgrade_history
+    //     try {
+    //         await system_store.make_changes_with_retries({
+    //             update: {
+    //                 systems: [{
+    //                     _id: system_store.data.systems[0]._id,
+    //                     $set: { upgrade_history, current_version }
+    //                 }]
+    //             }
+    //         }, { max_retries: 10, delay: 30000 });
+    //     } catch (error) {
+    //         dbg.error('failed to update system_store with upgrade information');
+    //         exit_code = 1;
+    //     }
+    // }
     return exit_code;
 }
 
