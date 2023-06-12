@@ -498,7 +498,8 @@ class ObjectSDK {
             error = 1;
             throw e;
         } finally {
-            stats_collector.instance(this.internal_rpc_client).update_ops_counters({
+            if (!process.env.BYPASS_COUNTERS) {
+                stats_collector.instance(this.internal_rpc_client).update_ops_counters({
                 time: Date.now() - start_time,
                 op_name: `read_object`,
                 error,

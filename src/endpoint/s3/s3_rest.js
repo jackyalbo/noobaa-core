@@ -215,6 +215,7 @@ async function authorize_request_policy(req) {
         return;
     }
 
+    if (process.env.BYPASS_READ_ACCOUNT) return;
     const account = await req.object_sdk.rpc_client.account.read_account({});
     const is_system_owner = account.email.unwrap() === system_owner.unwrap();
 

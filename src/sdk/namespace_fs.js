@@ -183,7 +183,7 @@ class NamespaceFS {
      * }} params
      */
     constructor({ bucket_path, fs_backend, bucket_id, namespace_resource_id, access_mode }) {
-        dbg.log0('NamespaceFS: buffers_pool', buffers_pool);
+        dbg.log1('NamespaceFS: buffers_pool', buffers_pool);
         this.bucket_path = path.resolve(bucket_path);
         this.fs_backend = fs_backend;
         this.bucket_id = bucket_id;
@@ -571,9 +571,9 @@ class NamespaceFS {
             let log2_size_histogram = {};
             let drain_promise = null;
 
-            dbg.log0('NamespaceFS: read_object_stream', { file_path, start, end });
+            dbg.log1('NamespaceFS: read_object_stream', { file_path, start, end });
 
-            let count = 1;
+            // let count = 1;
             for (let pos = start; pos < end;) {
                 object_sdk.throw_if_aborted();
 
@@ -592,14 +592,14 @@ class NamespaceFS {
                 // We need to find it and fix
 
                 // Update the read stats               
-                stats_collector.instance(object_sdk.rpc_client).update_nsfs_read_stats({
-                    namespace_resource_id: this.namespace_resource_id,
-                    bucket_name: params.bucket,
-                    size: read_size,
-                    count
-                });
+                // stats_collector.instance(object_sdk.rpc_client).update_nsfs_read_stats({
+                //     namespace_resource_id: this.namespace_resource_id,
+                //     bucket_name: params.bucket,
+                //     size: read_size,
+                //     count
+                // });
                 // clear count for next updates
-                count = 0;
+                // count = 0;
 
                 const bytesRead = await file.read(fs_context, buffer, 0, read_size, pos);
                 if (!bytesRead) {
@@ -1472,7 +1472,7 @@ class NamespaceFS {
      * @returns 
      */
     async _is_path_in_bucket_boundaries(fs_context, entry_path) {
-        dbg.log0('check_bucket_boundaries: fs_context', fs_context, 'file_path', entry_path);
+        dbg.log1('check_bucket_boundaries: fs_context', fs_context, 'file_path', entry_path);
         if (!entry_path.startsWith(this.bucket_path)) {
             dbg.log0('check_bucket_boundaries: the path', entry_path, 'is not in the bucket', this.bucket_path, 'boundaries');
             return false;
