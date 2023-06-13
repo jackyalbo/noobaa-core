@@ -222,6 +222,10 @@ class EndpointStatsCollector {
 
     update_nsfs_read_stats({ namespace_resource_id, bucket_name, size = 0, count = 0, is_err }) {
         this.update_namespace_read_stats({ namespace_resource_id, bucket_name, size, count, is_err });
+        if (process.env.BYPASS_UPDATE_COUNTERS) {
+            dbg.log0('JAJA skip update_nsfs_read_counters', process.env.BYPASS_UPDATE_COUNTERS);
+            return;
+        }
         this.update_nsfs_read_counters({ size, count, is_err });
     }
 
