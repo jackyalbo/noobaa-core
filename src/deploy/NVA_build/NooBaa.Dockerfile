@@ -158,13 +158,6 @@ ENV LD_PRELOAD /usr/lib64/libjemalloc.so.2
 #RUN mkdir -p /nsfs/fs1/amitpb && chmod -R 777 /nsfs/
 #RUN mkdir -p /nsfsAA/fs1/amitpb && chmod -R 777 /nsfsAA/
 
-###############
-# EXEC SETUP #
-###############
-# Run as non root user that belongs to root 
-RUN useradd -u 10001 -g 0 -m -d /home/noob -s /bin/bash noob
-USER 10001:0
-
 # We are using CMD and not ENDPOINT so 
 # we can override it when we use this image as agent. 
 CMD ["/usr/bin/supervisord", "start"]
