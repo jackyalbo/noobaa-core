@@ -92,6 +92,7 @@ RUN dnf install -y epel-release && \
     bash-completion \
     python3-setuptools \
     jemalloc \
+    librdkafka \
     xz \
     python3-pip \
     cronie && \
