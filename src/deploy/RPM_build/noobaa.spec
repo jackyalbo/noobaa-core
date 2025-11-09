@@ -72,6 +72,11 @@ then
   sed -i 's/\/lib64\/libboost_thread.so.1.75.0/\/lib64\/libboost_thread.so.1.66.0/g' ./src/native/s3select/s3select.gyp
   echo "Using libboost 1.66 for S3 Select"
 fi
+if [[ "%{CENTOS_VER}" = "10" ]]
+then
+  sed -i 's/\/lib64\/libboost_thread.so.1.75.0/\/lib64\/libboost_thread.so.1.83.0/g' ./src/native/s3select/s3select.gyp
+  echo "Using libboost 1.83 for S3 Select"
+fi
 
 GYP_DEFINES="BUILD_S3SELECT=%{BUILD_S3SELECT} BUILD_S3SELECT_PARQUET=%{BUILD_S3SELECT_PARQUET}" npm run build
 
