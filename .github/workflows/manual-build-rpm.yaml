@@ -15,6 +15,7 @@ on:
         options: 
           - '8'
           - '9'
+          - '10'
       architecture:
         type: choice
         description: 'Architecture (options: linux/amd64 or linux/ppc64le) - Optional, default is linux/amd64'
