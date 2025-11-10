@@ -13,12 +13,14 @@
 namespace noobaa
 {
 
+__attribute__((visibility("default")))
 pid_t
 get_current_tid()
 {
     return syscall(SYS_gettid);
 }
 
+__attribute__((visibility("default")))
 uid_t
 get_current_uid()
 {
