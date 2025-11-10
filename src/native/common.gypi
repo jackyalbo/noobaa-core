@@ -31,12 +31,14 @@
                 ],
                 'cflags': [
                     '-Wno-cast-function-type',
+                    '-fvisibility=default',
                 ],
                 'cflags_c': [
                     '-std=gnu99', # c99 -> gnu99 to allow asm()
                 ],
                 'cflags_cc': [
-                    '-std=c++2a'
+                    '-std=c++2a',
+                    '-fvisibility=default',
                 ],
                 'ldflags': [
                     '-lrt', # librt
