@@ -1,5 +1,4 @@
 /* Copyright (C) 2016 NooBaa */
-#ifdef __linux__
 
 #include "common.h"
 
@@ -155,5 +154,3 @@ ThreadScope::get_process_groups() {
 }
 
 } // namespace noobaa
-
-#endif
