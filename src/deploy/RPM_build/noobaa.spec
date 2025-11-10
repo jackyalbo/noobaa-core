@@ -78,6 +78,7 @@ then
   echo "Using libboost 1.83 for S3 Select"
 fi
 
+echo "GYP OS = $OS"
 GYP_DEFINES="BUILD_S3SELECT=%{BUILD_S3SELECT} BUILD_S3SELECT_PARQUET=%{BUILD_S3SELECT_PARQUET}" npm run build
 
 %install
