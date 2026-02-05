@@ -25,16 +25,18 @@ jobs:
             bash -lc '
               set -euo pipefail
               mkdir -p /etc/noobaa.conf.d /nsfs/buckets
-              cat > /etc/noobaa.conf.d/config.json <<'"'"'EOF'"'"'
-              {
-                "ALLOW_HTTP": true,
-                "ENDPOINT_PORT": 6001
-              }
-              EOF
+              printf "%s\n" \
+                "{" \
+                "  \"ALLOW_HTTP\": true," \
+                "  \"ENDPOINT_PORT\": 6001" \
+                "}" \
+                > /etc/noobaa.conf.d/config.json
               /usr/local/bin/node /root/node_modules/noobaa-core/src/cmd/manage_nsfs.js account add \
+                --config_root /etc/noobaa.conf.d \
                 --name s3a-user --uid 0 --gid 0 --new_buckets_path /nsfs/buckets
               mkdir -p /nsfs/buckets/s3a-test
               /usr/local/bin/node /root/node_modules/noobaa-core/src/cmd/manage_nsfs.js bucket add \
+                --config_root /etc/noobaa.conf.d \
                 --name s3a-test --owner s3a-user --path /nsfs/buckets/s3a-test
               exec /usr/local/bin/node /root/node_modules/noobaa-core/src/cmd/nsfs.js /nsfs/buckets \
                 --config_root /etc/noobaa.conf.d
@@ -58,6 +60,7 @@ jobs:
           set -euo pipefail
           account_json="$(docker exec -u 0 noobaa-nc \
             /usr/local/bin/node /root/node_modules/noobaa-core/src/cmd/manage_nsfs.js account status \
+            --config_root /etc/noobaa.conf.d \
             --name s3a-user --show_secrets)"
           access_key="$(echo "${account_json}" | jq -r '.response.reply.access_keys[0].access_key')"
           secret_key="$(echo "${account_json}" | jq -r '.response.reply.access_keys[0].secret_key')"
