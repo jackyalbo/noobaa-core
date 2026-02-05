@@ -1,0 +1,132 @@
+name: Hadoop S3A NC Tests
+on: [workflow_dispatch]
+
+jobs:
+  hadoop-s3a-nc-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build NooBaa image
+        run: |
+          set -euo pipefail
+          make noobaa
+
+      - name: Start NooBaa NC endpoint
+        run: |
+          set -euo pipefail
+          docker network create s3a-test
+          docker run -d --name noobaa-nc --network s3a-test --user 0 noobaa \
+            bash -lc '
+              set -euo pipefail
+              mkdir -p /etc/noobaa.conf.d /nsfs/buckets
+              cat > /etc/noobaa.conf.d/config.json <<'"'"'EOF'"'"'
+              {
+                "ALLOW_HTTP": true,
+                "ENDPOINT_PORT": 6001
+              }
+              EOF
+              /usr/local/bin/node /root/node_modules/noobaa-core/src/cmd/manage_nsfs.js account add \
+                --name s3a-user --uid 0 --gid 0 --new_buckets_path /nsfs/buckets
+              mkdir -p /nsfs/buckets/s3a-test
+              /usr/local/bin/node /root/node_modules/noobaa-core/src/cmd/manage_nsfs.js bucket add \
+                --name s3a-test --owner s3a-user --path /nsfs/buckets/s3a-test
+              exec /usr/local/bin/node /root/node_modules/noobaa-core/src/cmd/nsfs.js /nsfs/buckets \
+                --config_root /etc/noobaa.conf.d \
+                --http_port 6001 \
+                --https_port -1 \
+                --https_port_sts -1 \
+                --https_port_iam -1
+            '
+
+      - name: Wait for endpoint
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 60); do
+            if docker exec noobaa-nc bash -lc "nc -z localhost 6001"; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "NooBaa endpoint did not start in time" >&2
+          docker logs noobaa-nc || true
+          exit 1
+
+      - name: Fetch S3A credentials
+        run: |
+          set -euo pipefail
+          account_json="$(docker exec -u 0 noobaa-nc \
+            /usr/local/bin/node /root/node_modules/noobaa-core/src/cmd/manage_nsfs.js account status \
+            --name s3a-user --show_secrets)"
+          access_key="$(echo "${account_json}" | jq -r '.response.reply.access_keys[0].access_key')"
+          secret_key="$(echo "${account_json}" | jq -r '.response.reply.access_keys[0].secret_key')"
+          echo "::add-mask::${access_key}"
+          echo "::add-mask::${secret_key}"
+          {
+            echo "S3A_ACCESS_KEY=${access_key}"
+            echo "S3A_SECRET_KEY=${secret_key}"
+          } >> "${GITHUB_ENV}"
+
+      - name: Run Hadoop S3A tests
+        run: |
+          set -euo pipefail
+          docker run --rm --network s3a-test \
+            -e AWS_ACCESS_KEY_ID="${S3A_ACCESS_KEY}" \
+            -e AWS_SECRET_ACCESS_KEY="${S3A_SECRET_KEY}" \
+            -e S3A_ENDPOINT="noobaa-nc:6001" \
+            maven:3.9.6-eclipse-temurin-11 \
+            bash -lc '
+              set -euo pipefail
+              apt-get update -y
+              apt-get install -y git
+              git clone --depth 1 --branch rel/release-3.3.6 https://github.com/apache/hadoop.git /tmp/hadoop
+              mkdir -p /tmp/hadoop-conf
+              cat > /tmp/hadoop-conf/core-site.xml <<EOF
+              <configuration>
+                <property>
+                  <name>fs.s3a.endpoint</name>
+                  <value>${S3A_ENDPOINT}</value>
+                </property>
+                <property>
+                  <name>fs.s3a.connection.ssl.enabled</name>
+                  <value>false</value>
+                </property>
+                <property>
+                  <name>fs.s3a.path.style.access</name>
+                  <value>true</value>
+                </property>
+                <property>
+                  <name>fs.s3a.aws.credentials.provider</name>
+                  <value>org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider</value>
+                </property>
+                <property>
+                  <name>fs.s3a.access.key</name>
+                  <value>${AWS_ACCESS_KEY_ID}</value>
+                </property>
+                <property>
+                  <name>fs.s3a.secret.key</name>
+                  <value>${AWS_SECRET_ACCESS_KEY}</value>
+                </property>
+                <property>
+                  <name>fs.s3a.region</name>
+                  <value>us-east-1</value>
+                </property>
+                <property>
+                  <name>test.fs.s3a.name</name>
+                  <value>s3a://s3a-test</value>
+                </property>
+                <property>
+                  <name>test.fs.s3a.bucket</name>
+                  <value>s3a-test</value>
+                </property>
+              </configuration>
+              EOF
+              export HADOOP_CONF_DIR=/tmp/hadoop-conf
+              cd /tmp/hadoop
+              mvn -pl hadoop-tools/hadoop-aws -DskipTests=false -Dtest=ITestS3A* -DfailIfNoTests=false test
+            '
