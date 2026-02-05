@@ -37,11 +37,7 @@ jobs:
               /usr/local/bin/node /root/node_modules/noobaa-core/src/cmd/manage_nsfs.js bucket add \
                 --name s3a-test --owner s3a-user --path /nsfs/buckets/s3a-test
               exec /usr/local/bin/node /root/node_modules/noobaa-core/src/cmd/nsfs.js /nsfs/buckets \
-                --config_root /etc/noobaa.conf.d \
-                --http_port 6001 \
-                --https_port -1 \
-                --https_port_sts -1 \
-                --https_port_iam -1
+                --config_root /etc/noobaa.conf.d
             '
 
       - name: Wait for endpoint
