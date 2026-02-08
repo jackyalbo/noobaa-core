@@ -104,6 +104,35 @@ jobs:
                 "    <value>org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider</value>" \
                 "  </property>" \
                 "  <property>" \
+                "    <name>fs.s3a.region</name>" \
+                "    <value>us-east-1</value>" \
+                "  </property>" \
+                "  <property>" \
+                "    <name>test.fs.s3a.name</name>" \
+                "    <value>s3a://s3a-test</value>" \
+                "  </property>" \
+                "  <property>" \
+                "    <name>test.fs.s3a.bucket</name>" \
+                "    <value>s3a-test</value>" \
+                "  </property>" \
+                "</configuration>" \
+                > /tmp/hadoop-conf/core-site.xml
+              mkdir -p /tmp/hadoop/hadoop-tools/hadoop-aws/src/test/resources
+              printf "%s\n" \
+                "<configuration>" \
+                "  <property>" \
+                "    <name>fs.s3a.endpoint</name>" \
+                "    <value>${S3A_ENDPOINT}</value>" \
+                "  </property>" \
+                "  <property>" \
+                "    <name>fs.s3a.connection.ssl.enabled</name>" \
+                "    <value>false</value>" \
+                "  </property>" \
+                "  <property>" \
+                "    <name>fs.s3a.path.style.access</name>" \
+                "    <value>true</value>" \
+                "  </property>" \
+                "  <property>" \
                 "    <name>fs.s3a.access.key</name>" \
                 "    <value>${AWS_ACCESS_KEY_ID}</value>" \
                 "  </property>" \
@@ -124,7 +153,7 @@ jobs:
                 "    <value>s3a-test</value>" \
                 "  </property>" \
                 "</configuration>" \
-                > /tmp/hadoop-conf/core-site.xml
+                > /tmp/hadoop/hadoop-tools/hadoop-aws/src/test/resources/auth-keys.xml
               export HADOOP_CONF_DIR=/tmp/hadoop-conf
               cd /tmp/hadoop
               mvn -pl hadoop-tools/hadoop-aws \
@@ -132,5 +161,7 @@ jobs:
                 -Dtest=ITestS3A* \
                 -DfailIfNoTests=false \
                 -Dtest.hadoop.conf.dir=/tmp/hadoop-conf \
+                -Dtest.fs.s3a.name=s3a://s3a-test \
+                -Dtest.fs.s3a.bucket=s3a-test \
                 test
             '
