@@ -127,5 +127,10 @@ jobs:
                 > /tmp/hadoop-conf/core-site.xml
               export HADOOP_CONF_DIR=/tmp/hadoop-conf
               cd /tmp/hadoop
-              mvn -pl hadoop-tools/hadoop-aws -DskipTests=false -Dtest=ITestS3A* -DfailIfNoTests=false test
+              mvn -pl hadoop-tools/hadoop-aws \
+                -DskipTests=false \
+                -Dtest=ITestS3A* \
+                -DfailIfNoTests=false \
+                -Dtest.hadoop.conf.dir=/tmp/hadoop-conf \
+                test
             '
