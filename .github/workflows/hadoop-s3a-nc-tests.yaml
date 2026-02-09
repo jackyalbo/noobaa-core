@@ -75,12 +75,10 @@ jobs:
         run: |
           set -euo pipefail
           set +e
-          mkdir -p logs
           docker run --rm --network s3a-test \
             -e AWS_ACCESS_KEY_ID="${S3A_ACCESS_KEY}" \
             -e AWS_SECRET_ACCESS_KEY="${S3A_SECRET_KEY}" \
             -e S3A_ENDPOINT="noobaa-nc:6001" \
-            -v "${PWD}/logs:/logs" \
             maven:3.9.6-eclipse-temurin-11 \
             bash -lc '
               set -euo pipefail
@@ -147,56 +145,7 @@ jobs:
               eval "${mvn_cmd}"
               mvn_status=$?
               set -e
-              python - <<'"'"'PY'"'"'
-import os
-import xml.etree.ElementTree as ET
-
-report_dirs = [
-    "/tmp/hadoop/hadoop-tools/hadoop-aws/target/surefire-reports",
-    "/tmp/hadoop/hadoop-tools/hadoop-aws/target/failsafe-reports",
-]
-failures = 0
-errors = 0
-tests = 0
-skipped = 0
-failing_tests = []
-
-for report_dir in report_dirs:
-    if not os.path.isdir(report_dir):
-        continue
-    for name in os.listdir(report_dir):
-        if not name.startswith("TEST-") or not name.endswith(".xml"):
-            continue
-        path = os.path.join(report_dir, name)
-        try:
-            tree = ET.parse(path)
-            root = tree.getroot()
-            failures += int(root.attrib.get("failures", 0))
-            errors += int(root.attrib.get("errors", 0))
-            tests += int(root.attrib.get("tests", 0))
-            skipped += int(root.attrib.get("skipped", 0))
-            for testcase in root.findall(".//testcase"):
-                for tag in ("failure", "error"):
-                    elem = testcase.find(tag)
-                    if elem is not None:
-                        classname = testcase.attrib.get("classname", "unknown")
-                        testname = testcase.attrib.get("name", "unknown")
-                        message = (elem.attrib.get("message") or "").strip()
-                        entry = f"{classname}#{testname} [{tag}]"
-                        if message:
-                            entry += f" - {message}"
-                        failing_tests.append(entry)
-        except Exception:
-            pass
-
-print(f"Parsed reports: tests={tests} failures={failures} errors={errors} skipped={skipped}")
-with open("/logs/failing-tests.txt", "w") as fh:
-    for entry in failing_tests:
-        fh.write(entry + "\n")
-exit(1 if (failures or errors) else 0)
-PY
-              report_status=$?
-              if [ "${mvn_status}" -ne 0 ] || [ "${report_status}" -ne 0 ]; then
+              if [ "${mvn_status}" -ne 0 ]; then
                 exit 1
               fi
             '
@@ -211,14 +160,4 @@ PY
               echo "| Hadoop S3A tests | Failure (exit ${status}) |"
             fi
           } >> "${GITHUB_STEP_SUMMARY}"
-          if [ -s "logs/failing-tests.txt" ]; then
-            {
-              echo ""
-              echo "### Failing Test Cases"
-              echo ""
-              while IFS= read -r line; do
-                echo "- ${line}"
-              done < "logs/failing-tests.txt"
-            } >> "${GITHUB_STEP_SUMMARY}"
-          fi
           exit "${status}"
