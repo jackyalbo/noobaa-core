@@ -74,6 +74,7 @@ jobs:
       - name: Run Hadoop S3A tests
         run: |
           set -euo pipefail
+          set +e
           docker run --rm --network s3a-test \
             -e AWS_ACCESS_KEY_ID="${S3A_ACCESS_KEY}" \
             -e AWS_SECRET_ACCESS_KEY="${S3A_SECRET_KEY}" \
@@ -134,10 +135,19 @@ jobs:
                 "</configuration>" \
                 > /tmp/hadoop/hadoop-tools/hadoop-aws/src/test/resources/auth-keys.xml
               cd /tmp/hadoop
-              mvn -pl hadoop-tools/hadoop-aws \
-                -DskipTests=false \
-                -DskipITs=false \
-                -Dit.test=ITestS3A* \
-                -Dtest=TestS3A* \
-                verify
+              mvn_cmd="mvn -pl hadoop-tools/hadoop-aws -DskipTests=false -DskipITs=false -Dit.test=ITestS3A* -Dtest=TestS3A* verify"
+              echo "Running: ${mvn_cmd}"
+              eval "${mvn_cmd}"
             '
+          status=$?
+          set -e
+          {
+            echo "| Check | Result |"
+            echo "| --- | --- |"
+            if [ "${status}" -eq 0 ]; then
+              echo "| Hadoop S3A tests | Success |"
+            else
+              echo "| Hadoop S3A tests | Failure (exit ${status}) |"
+            fi
+          } >> "${GITHUB_STEP_SUMMARY}"
+          exit "${status}"
